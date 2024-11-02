@@ -6,13 +6,12 @@ members = [
     "examples/simple-analyzer"
 ]
 
-[workspace.package]
-edition = "2021"  # 使用最新的 Rust 版本
-version = "0.0.1"
-authors = ["nnbhsi"]
-repository = "https://github.com/HuaLuonb/frame-analyzer-pebf/"
-readme = "README.md"
-name = "frame-analyzer-pebf"
+[package]
+name = "frame-analyzer-pebf"  # 确保这个名字与你在依赖中使用的名字一致
+version = "0.1.0"
+authors = ["HuaLuonb <your_email@example.com>"]
+edition = "2021"
 description = "Track the frametime of Android apps, based on pebf & uprobe"
 license = "GPL-3.0"
-documentation = "https://HuaLuonb.github.io/frame-analyzer-pebf"
+repository = "https://github.com/HuaLuonb/frame-analyzer-pebf"
+readme = "README.md"
