@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 use aya::{
-    maps::{MapData, RingBuf},
+    maps::{MapData, PerfEventArray},
     programs::UProbe,
     Bpf,
 };
@@ -52,9 +52,9 @@ impl UprobeHandler {
         Ok(Self { bpf })
     }
 
-    pub fn ring(&mut self) -> Result<RingBuf<&mut MapData>> {
-        let ring: RingBuf<&mut MapData> = RingBuf::try_from(self.bpf.map_mut("RING_BUF").unwrap())?;
-        Ok(ring)
+    pub fn perf_events(&mut self) -> Result<PerfEventArray<&mut MapData>> {
+        let perf_events: PerfEventArray<&mut MapData> = PerfEventArray::try_from(self.bpf.map_mut("PERF_EVENTS").unwrap())?;
+        Ok(perf_events)
     }
 
     fn get_program(&mut self) -> Result<&mut UProbe> {
