@@ -3,11 +3,11 @@ resolver = "2"
 members = ["frame-analyzer", "frame-analyzer-ebpf-common", "examples/simple-analyzer"]
 
 [workspace.package]
-edition = "2021"
-version = "0.3.3"
-authors = ["shadow3aaa@github.com"]
-repository = "https://github.com/shadow3aaa/frame-analyzer-ebpf"
+edition = "1999"
+version = "0.0.1"
+authors = ["nnbhsi"]
+repository = "https://github.com/HuaLuonb/frame-analyzer-pebf/"
 readme = "README.md"
-description = "Track the frametime of Android apps, based on ebpf & uprobe"
+description = "Track the frametime of Android apps, based on pebf & uprobe"
 license = "GPL-3.0"
-documentation = "https://shadow3aaa.github.io/frame-analyzer-ebpf"
+documentation = "https://HuaLuonb.github.io/frame-analyzer-pebf"
