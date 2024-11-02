@@ -18,12 +18,10 @@
  */
 use std::{
     collections::{HashMap, VecDeque},
-    ptr,
     time::Duration,
 };
 
 use frame_analyzer_ebpf_common::FrameSignal;
-
 use crate::uprobe::UprobeHandler;
 
 pub struct AnalyzeTarget {
@@ -40,43 +38,43 @@ impl AnalyzeTarget {
     }
 
     pub fn update(&mut self) -> Option<Duration> {
-        let mut ring = self.uprobe.ring().unwrap();
-        let item = ring.next()?;
-        let event = unsafe { trans(&item) };
-        if let Some((timestamp, buffer)) = self.buffers.get_mut(&event.buffer) {
-            let frametime = event.ktime_ns.saturating_sub(*timestamp);
-            *timestamp = event.ktime_ns;
+        let perf_events = self.uprobe.perf_events().unwrap();
+        for event in perf_events {
+            let frame_signal = unsafe { trans(&event) };
+            if let Some((timestamp, buffer)) = self.buffers.get_mut(&frame_signal.buffer) {
+                let frametime = frame_signal.ktime_ns.saturating_sub(*timestamp);
+                *timestamp = frame_signal.ktime_ns;
 
-            if buffer.len() >= 144 {
-                buffer.pop_back();
+                if buffer.len() >= 144 {
+                    buffer.pop_back();
+                }
+
+                buffer.push_front(Duration::from_nanos(frametime));
+            } else {
+                self.buffers
+                    .insert(frame_signal.buffer, (frame_signal.ktime_ns, VecDeque::with_capacity(144)));
             }
 
-            buffer.push_front(Duration::from_nanos(frametime));
-        } else {
-            self.buffers
-                .insert(event.buffer, (event.ktime_ns, VecDeque::with_capacity(144)));
-        }
-
-        let max_len = self
-            .buffers
-            .values()
-            .map(|(_, buffer)| buffer.len())
-            .max()
-            .unwrap_or_default();
-        if self.buffers.get(&event.buffer)
-            == self
+            let max_len = self
                 .buffers
                 .values()
-                .filter(|(_, buffer)| buffer.len() == max_len)
-                .min_by_key(|(_, buffer)| buffer.iter().copied().sum::<Duration>())
-        {
-            self.buffers.get(&event.buffer)?.1.front().copied()
-        } else {
-            None
+                .map(|(_, buffer)| buffer.len())
+                .max()
+                .unwrap_or_default();
+            if self.buffers.get(&frame_signal.buffer)
+                == self
+                    .buffers
+                    .values()
+                    .filter(|(_, buffer)| buffer.len() == max_len)
+                    .min_by_key(|(_, buffer)| buffer.iter().copied().sum::<Duration>())
+            {
+                return self.buffers.get(&frame_signal.buffer)?.1.front().copied();
+            }
         }
+        None
     }
 }
 
 const unsafe fn trans(buf: &[u8]) -> FrameSignal {
-    ptr::read_unaligned(buf.as_ptr().cast::<FrameSignal>())
+    std::ptr::read_unaligned(buf.as_ptr().cast::<FrameSignal>())
 }
