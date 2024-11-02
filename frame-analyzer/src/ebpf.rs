@@ -16,9 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-use aya::{include_bytes_aligned, Bpf};
+use aya::{include_bytes_aligned, Bpf, programs::UProbe, maps::PerfEventArray};
 use ctor::ctor;
-
 use crate::error::Result;
 
 #[ctor]
@@ -35,15 +34,24 @@ fn ebpf_workround() {
 pub fn load_bpf() -> Result<Bpf> {
     // This will include eBPF object file as raw bytes at compile-time and load it at runtime.
     #[cfg(debug_assertions)]
-    let bpf = Bpf::load(include_bytes_aligned!(concat!(
+    let mut bpf = Bpf::load(include_bytes_aligned!(concat!(
         env!("OUT_DIR"),
         "/ebpf_target/bpfel-unknown-none/debug/frame-analyzer-ebpf"
     )))?;
     #[cfg(not(debug_assertions))]
-    let bpf = Bpf::load(include_bytes_aligned!(concat!(
+    let mut bpf = Bpf::load(include_bytes_aligned!(concat!(
         env!("OUT_DIR"),
         "/ebpf_target/bpfel-unknown-none/release/frame-analyzer-ebpf"
     )))?;
+
+    // Attach the uprobe
+    let program: &mut UProbe = bpf.program_mut("frame_analyzer_ebpf").unwrap().try_into()?;
+    program.load()?;
+    program.attach(Some("target_binary"), 0, "target_function")?;
+
+    // Set up the PerfEventArray
+    let perf_array: &mut PerfEventArray = bpf.map_mut("PERF_EVENTS").unwrap().try_into()?;
+    perf_array.open_all_cpu()?;
 
     Ok(bpf)
 }
