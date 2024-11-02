@@ -12,6 +12,7 @@ version = "0.0.1"
 authors = ["nnbhsi"]
 repository = "https://github.com/HuaLuonb/frame-analyzer-pebf/"
 readme = "README.md"
+name = "frame-analyzer-pebf"
 description = "Track the frametime of Android apps, based on pebf & uprobe"
 license = "GPL-3.0"
 documentation = "https://HuaLuonb.github.io/frame-analyzer-pebf"
