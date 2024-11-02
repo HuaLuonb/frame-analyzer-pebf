@@ -82,11 +82,8 @@ mod uprobe;
 
 use std::{
     collections::{HashMap, VecDeque},
-    os::unix::io::AsRawFd,
     time::Duration,
 };
-
-use mio::{event::Event, unix::SourceFd, Events, Interest, Poll, Token};
 
 use analyze_target::AnalyzeTarget;
 pub use error::AnalyzerError;
@@ -122,7 +119,6 @@ const EVENT_MAX: usize = 1024;
 /// # }
 /// ```
 pub struct Analyzer {
-    poll: Option<Poll>,
     map: HashMap<Pid, AnalyzeTarget>,
     buffer: VecDeque<Pid>,
 }
@@ -150,11 +146,10 @@ impl Analyzer {
     /// # }
     /// ```
     pub fn new() -> Result<Self> {
-        let poll = None;
         let map = HashMap::new();
         let buffer = VecDeque::with_capacity(EVENT_MAX);
 
-        Ok(Self { poll, map, buffer })
+        Ok(Self { map, buffer })
     }
 
     /// Attach the Analyzer to the target application
@@ -191,7 +186,6 @@ impl Analyzer {
 
         let uprobe = UprobeHandler::attach_app(pid)?;
         self.map.insert(pid, AnalyzeTarget::new(uprobe));
-        self.register_poll()?;
 
         Ok(())
     }
@@ -228,7 +222,6 @@ impl Analyzer {
 
         self.map.remove(&pid).ok_or(AnalyzerError::AppNotFound)?;
         self.buffer.retain(|pid_event| *pid_event != pid);
-        self.register_poll()?;
 
         Ok(())
     }
@@ -286,14 +279,11 @@ impl Analyzer {
     /// ```
     pub fn recv(&mut self) -> Option<(Pid, Duration)> {
         if self.buffer.is_empty() {
-            if let Some(ref mut poll) = self.poll {
-                let mut events = Events::with_capacity(EVENT_MAX);
-                let _ = poll.poll(&mut events, None);
-
-                self.buffer.extend(events.iter().map(event_to_pid));
+            for (pid, target) in &mut self.map {
+                if let Some(frametime) = target.update() {
+                    self.buffer.push_back(*pid);
+                }
             }
-
-            let _ = self.register_poll();
         }
 
         let pid = self.buffer.pop_front()?;
@@ -330,14 +320,11 @@ impl Analyzer {
     /// ```
     pub fn recv_timeout(&mut self, time: Duration) -> Option<(Pid, Duration)> {
         if self.buffer.is_empty() {
-            if let Some(ref mut poll) = self.poll {
-                let mut events = Events::with_capacity(EVENT_MAX);
-                let _ = poll.poll(&mut events, Some(time));
-
-                self.buffer.extend(events.iter().map(event_to_pid));
+            for (pid, target) in &mut self.map {
+                if let Some(frametime) = target.update() {
+                    self.buffer.push_back(*pid);
+                }
             }
-
-            let _ = self.register_poll();
         }
 
         let pid = self.buffer.pop_front()?;
@@ -356,25 +343,4 @@ impl Analyzer {
     pub fn pids(&self) -> impl Iterator<Item = Pid> + '_ {
         self.map.keys().copied()
     }
-
-    fn register_poll(&mut self) -> Result<()> {
-        let poll = Poll::new()?;
-
-        for (pid, handler) in &mut self.map {
-            poll.registry().register(
-                &mut SourceFd(&handler.uprobe.ring()?.as_raw_fd()),
-                Token(*pid as usize),
-                Interest::READABLE,
-            )?;
-        }
-
-        self.poll = Some(poll);
-        Ok(())
-    }
-}
-
-fn event_to_pid(event: &Event) -> Pid {
-    let token = event.token();
-    let Token(pid) = token;
-    pid as Pid
 }
