@@ -1,4 +1,4 @@
-# frame-analyzer-ebpf
+# frame-analyzer-pebf
 
 [![Crates.io][crates-badge]][crates-url]
 ![License][license-badge]
@@ -8,12 +8,12 @@
 [crates-url]: https://crates.io/crates/frame-analyzer
 [license-badge]: https://img.shields.io/badge/license-GPLv3-blue?style=for-the-badge
 [api-docs-badge]: https://img.shields.io/badge/docs-frame--analyzer-blue.svg?style=for-the-badge&logo=docsdotrs
-[api-docs]: https://shadow3aaa.github.io/frame-analyzer-ebpf
+[api-docs]: https://shadow3aaa.github.io/frame-analyzer-pebf
 
-Track the frametime of Android apps, based on ebpf & uprobe
+Track the frametime of Android apps, based on pebf & uprobe
 
-- Based on the EBPF and UPROBE implementations, you may need higher privileges (e.g. root) to use this crate properly
-- This IS NOT a bin crate, it uses some tricks (see [source](https://github.com/shadow3aaa/frame-analyzer-ebpf?tab=readme-ov-file)) to get it to work like a normal lib crate, even though it includes an EBPF program
+- Based on the pebf and UPROBE implementations, you may need higher privileges (e.g. root) to use this crate properly
+- This IS NOT a bin crate, it uses some tricks (see [source](https://github.com/shadow3aaa/frame-analyzer-pebf?tab=readme-ov-file)) to get it to work like a normal lib crate, even though it includes an pebf program
 - Only 64-bit devices & apps are supported!
 
 ## Examples
