@@ -22,14 +22,14 @@
 use aya_ebpf::{
     helpers::gen::bpf_ktime_get_ns,
     macros::{map, uprobe},
-    maps::RingBuf,
+    maps::PerfEventArray,
     programs::ProbeContext,
 };
 
 use frame_analyzer_ebpf_common::FrameSignal;
 
 #[map]
-static RING_BUF: RingBuf = RingBuf::with_byte_size(0x1000, 0);
+static PERF_EVENTS: PerfEventArray = PerfEventArray::new();
 
 #[uprobe]
 pub fn frame_analyzer_ebpf(ctx: ProbeContext) -> u32 {
@@ -40,11 +40,10 @@ pub fn frame_analyzer_ebpf(ctx: ProbeContext) -> u32 {
 }
 
 fn try_frame_analyzer_ebpf(ctx: ProbeContext) -> Result<u32, u32> {
-    if let Some(mut entry) = RING_BUF.reserve::<FrameSignal>(0) {
-        let ktime_ns = unsafe { bpf_ktime_get_ns() };
-        entry.write(FrameSignal::new(ktime_ns, ctx.arg::<usize>(0).unwrap()));
-        entry.submit(0);
-    }
+    let ktime_ns = unsafe { bpf_ktime_get_ns() };
+    let frame_signal = FrameSignal::new(ktime_ns, ctx.arg::<usize>(0).unwrap());
+
+    PERF_EVENTS.output(ctx, &frame_signal, 0)?;
 
     Ok(0)
 }
