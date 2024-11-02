@@ -1,9 +1,13 @@
 [workspace]
 resolver = "2"
-members = ["frame-analyzer", "frame-analyzer-ebpf-common", "examples/simple-analyzer"]
+members = [
+    "frame-analyzer",
+    "frame-analyzer-ebpf-common",
+    "examples/simple-analyzer"
+]
 
 [workspace.package]
-edition = "1999"
+edition = "2021"  # 使用最新的 Rust 版本
 version = "0.0.1"
 authors = ["nnbhsi"]
 repository = "https://github.com/HuaLuonb/frame-analyzer-pebf/"
